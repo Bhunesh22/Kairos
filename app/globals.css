@@ -153,5 +153,25 @@
   }
   html {
     @apply font-sans;
+    /* Comfortable, medium-sized UI. Everything is in rem, so this scales text,
+       spacing and controls together; % keeps the user's browser setting in play. */
+    font-size: 106.25%;
+  }
+  @media (min-width: 40rem) {
+    html {
+      font-size: 112.5%;
+    }
+  }
+}
+@keyframes typing-dot {
+  0%,
+  80%,
+  100% {
+    transform: translateY(0);
+    opacity: 0.35;
+  }
+  40% {
+    transform: translateY(-3px);
+    opacity: 1;
   }
 }

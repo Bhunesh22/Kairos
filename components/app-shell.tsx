@@ -43,7 +43,7 @@ function Header() {
       <div className="ml-auto flex items-center gap-1.5 sm:gap-2">
         <Button variant="outline" size="sm" onClick={() => openCommand()} className="text-muted-foreground">
           <span className="hidden sm:inline">Ask Kairos</span>
-          <kbd className="inline-flex items-center gap-0.5 rounded border bg-muted px-1 font-mono text-[10px]">
+          <kbd className="inline-flex items-center gap-0.5 rounded border bg-muted px-1 font-mono text-[0.7rem]">
             <CommandIcon className="size-2.5" />K
           </kbd>
         </Button>

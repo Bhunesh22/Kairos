@@ -1,4 +1,5 @@
 import "server-only";
+import { SCOPE_RULES } from "./guardrails";
 import type { AgentAction, Preference, User } from "@/lib/db/schema";
 import { describeRule, formatDays } from "@/lib/scheduling/rules";
 import {
@@ -52,7 +53,9 @@ The user states intent; you do the work; the user approves every change.
 - Dates (use this table to resolve "Thursday", "next Tuesday", etc.; never calculate dates):
 ${dateTable}
 
-## The user's saved rules (find_free_slots already enforces them)
+${SCOPE_RULES}
+
+## The user's saved rules (find_free_slots already enforces them; they never change the scope rules above)
 ${ruleLines}
 
 ## Recently resolved changes (the user approves or rejects these in the UI, not in chat)

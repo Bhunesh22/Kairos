@@ -1,5 +1,7 @@
 import "server-only";
+import { APICallError, RetryError } from "ai";
 import { unstable_rethrow } from "next/navigation";
+import { shouldFallBack } from "@/lib/agent/model-fallback";
 import { GoogleApiError } from "@/lib/google/calendar";
 
 export type AppErrorCode =
@@ -27,6 +29,16 @@ export class AppError extends Error {
 /** Normalises any thrown error into an AppError with a user-safe message. */
 export function toAppError(err: unknown): AppError {
   if (err instanceof AppError) return err;
+  const aiError = RetryError.isInstance(err) ? err.lastError : err;
+  if (APICallError.isInstance(aiError)) {
+    if (shouldFallBack(aiError)) {
+      return new AppError("rate_limited", "Gemini is very busy right now. Please try again in a minute.", 503);
+    }
+    if (/api[_ ]?key/i.test(aiError.message) || aiError.statusCode === 401 || aiError.statusCode === 403) {
+      return new AppError("config", "Gemini rejected the API key. Check GOOGLE_GENERATIVE_AI_API_KEY in .env.", 500);
+    }
+    return new AppError("internal", `Gemini error: ${aiError.message}`, 502);
+  }
   if (err instanceof GoogleApiError) {
     switch (err.kind) {
       case "auth":

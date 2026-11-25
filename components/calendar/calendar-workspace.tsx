@@ -112,7 +112,7 @@ export function CalendarWorkspace() {
         )}
       </section>
 
-      <aside className="hidden w-[400px] shrink-0 border-l lg:flex">
+      <aside className="hidden w-[25rem] shrink-0 border-l lg:flex">
         <AgentPanel />
       </aside>
 

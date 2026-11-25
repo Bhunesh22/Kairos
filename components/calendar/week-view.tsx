@@ -10,7 +10,7 @@ import { formatShort, hhmmToMinutes, localMinutes, toLocal, toLocalDate, weekday
 import { cn } from "@/lib/utils";
 import { layoutDay, type PositionedEvent } from "./layout-day";
 
-const HOUR_PX = 48;
+const HOUR_PX = 60;
 const GRID_COLS = "3.5rem repeat(7, minmax(0, 1fr))";
 
 export const CATEGORY_COLOR: Record<EventCategory, string> = {
@@ -51,7 +51,7 @@ export function WeekView({ days, events, timeZone, myEmail, workingHours, onSele
 
   return (
     <div className="flex min-h-0 flex-1 flex-col overflow-x-auto">
-      <div className="flex min-h-0 min-w-[720px] flex-1 flex-col">
+      <div className="flex min-h-0 min-w-[46rem] flex-1 flex-col">
         <div className="grid overflow-hidden border-b [scrollbar-gutter:stable]" style={{ gridTemplateColumns: GRID_COLS }}>
           <div />
           {days.map((d) => {
@@ -76,7 +76,7 @@ export function WeekView({ days, events, timeZone, myEmail, workingHours, onSele
 
         {hasAllDay && (
           <div className="grid overflow-hidden border-b [scrollbar-gutter:stable]" style={{ gridTemplateColumns: GRID_COLS }}>
-            <div className="py-1 pr-2 text-right text-[10px] text-muted-foreground">all-day</div>
+            <div className="py-1 pr-2 text-right text-[0.7rem] text-muted-foreground">all-day</div>
             {allDayByDate.map((list, i) => (
               <div key={days[i]} className="flex min-w-0 flex-col gap-0.5 border-l p-0.5">
                 {list.map((e) => (
@@ -84,7 +84,7 @@ export function WeekView({ days, events, timeZone, myEmail, workingHours, onSele
                     key={e.id}
                     type="button"
                     onClick={() => onSelect(e)}
-                    className="truncate rounded px-1.5 py-0.5 text-left text-[11px] font-medium"
+                    className="truncate rounded px-1.5 py-0.5 text-left text-xs font-medium"
                     style={{ background: `color-mix(in oklch, ${CATEGORY_COLOR[categorize(e, myEmail)]} 20%, var(--background))` }}
                   >
                     {e.title}
@@ -101,7 +101,7 @@ export function WeekView({ days, events, timeZone, myEmail, workingHours, onSele
               {Array.from({ length: 23 }, (_, h) => (
                 <span
                   key={h}
-                  className="absolute right-2 -translate-y-1/2 text-[10px] text-muted-foreground tabular-nums"
+                  className="absolute right-2 -translate-y-1/2 text-[0.7rem] text-muted-foreground tabular-nums"
                   style={{ top: (h + 1) * HOUR_PX }}
                 >
                   {String(h + 1).padStart(2, "0")}:00
@@ -166,7 +166,7 @@ function EventBlock({ p, tz, myEmail, onSelect }: { p: PositionedEvent; tz: stri
       onClick={() => onSelect(e)}
       title={`${e.title}\n${formatShort(start, tz)}–${toLocal(end, tz).slice(11)}`}
       className={cn(
-        "absolute z-10 flex flex-col overflow-hidden rounded-md px-1.5 py-0.5 text-left text-[11px] leading-tight shadow-xs transition hover:z-30 hover:shadow-md focus-visible:z-30 focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none",
+        "absolute z-10 flex flex-col overflow-hidden rounded-md px-1.5 py-0.5 text-left text-xs leading-tight shadow-xs transition hover:z-30 hover:shadow-md focus-visible:z-30 focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none",
         declined && "opacity-50",
       )}
       style={{

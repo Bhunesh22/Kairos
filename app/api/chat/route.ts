@@ -1,7 +1,16 @@
-import { convertToModelMessages, createUIMessageStreamResponse, isStepCount, streamText, toUIMessageStream, type UIMessage } from "ai";
+import {
+  convertToModelMessages,
+  createUIMessageStream,
+  createUIMessageStreamResponse,
+  isStepCount,
+  streamText,
+  toUIMessageStream,
+  type UIMessage,
+} from "ai";
 import { and, asc, eq } from "drizzle-orm";
 import { recentResolvedActions } from "@/lib/agent/actions";
-import { getModel } from "@/lib/agent/model";
+import { checkScope, outOfScopeReply } from "@/lib/agent/guardrails";
+import { getFastModel, getModel } from "@/lib/agent/model";
 import { buildInstructions } from "@/lib/agent/prompt";
 import { createTools } from "@/lib/agent/tools";
 import { getDb } from "@/lib/db";
@@ -21,9 +30,28 @@ function trimHistory(messages: UIMessage[]): UIMessage[] {
   return firstUser > 0 ? tail.slice(firstUser) : tail;
 }
 
+/** A fixed assistant reply, streamed in the same format as the agent's. */
+function replyWith(text: string, originalMessages: UIMessage[]): Response {
+  const stream = createUIMessageStream({
+    originalMessages,
+    execute: ({ writer }) => {
+      writer.write({ type: "start" });
+      writer.write({ type: "text-start", id: "reply" });
+      writer.write({ type: "text-delta", id: "reply", delta: text });
+      writer.write({ type: "text-end", id: "reply" });
+      writer.write({ type: "finish" });
+    },
+  });
+  return createUIMessageStreamResponse({ stream });
+}
+
 export const POST = route(async (req: Request) => {
   const session = await getSession();
   const { messages }: { messages: UIMessage[] } = await req.json();
+
+  // Guardrail: off-topic requests get a redirect and never reach the agent or its tools.
+  const scope = await checkScope(messages, getFastModel());
+  if (!scope.inScope) return replyWith(outOfScopeReply(scope.suggestion), messages);
 
   const [rules, recentActions] = await Promise.all([
     getDb()

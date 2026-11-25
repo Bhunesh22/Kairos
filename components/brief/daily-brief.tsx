@@ -14,7 +14,7 @@ function Stat({ label, value, tone }: { label: string; value: string; tone?: "wa
   return (
     <div className="flex flex-col rounded-lg bg-muted/60 px-2.5 py-1.5">
       <span className={tone === "warn" ? "font-semibold text-warning tabular-nums" : "font-semibold tabular-nums"}>{value}</span>
-      <span className="text-[11px] text-muted-foreground">{label}</span>
+      <span className="text-xs text-muted-foreground">{label}</span>
     </div>
   );
 }
