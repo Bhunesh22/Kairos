@@ -74,19 +74,22 @@ function safely<I, O>(fn: (input: I) => Promise<O>) {
 }
 
 export function createTools(session: Session, rules: Rule[]) {
-  const { gcal, user } = session;
+  const { calendar, user } = session;
   const tz = user.timezone;
+  // Kairos calendars live only in Neon: nobody else gets emails, and video links are Jitsi rooms.
+  const emailsAttendees = calendar.kind === "google";
+  const plural = (n: number, word: string) => `${n} ${word}${n === 1 ? "" : "s"}`;
 
   /** Names of the user's own blocking events that overlap [start, end). */
   async function clashes(start: Date, end: Date, ignoreEventId?: string): Promise<string[]> {
-    const events = await gcal.listEvents({ timeMin: start, timeMax: end, max: 20 });
+    const events = await calendar.listEvents({ timeMin: start, timeMax: end, max: 20 });
     return events
       .filter((e) => e.id !== ignoreEventId && isBlocking(e) && overlaps({ start: new Date(e.start), end: new Date(e.end) }, { start, end }))
       .map((e) => `"${e.title}" (${formatShort(new Date(e.start), tz)})`);
   }
 
   async function timedEvent(eventId: string): Promise<CalEvent> {
-    const event = await gcal.getEvent(eventId);
+    const event = await calendar.getEvent(eventId);
     if (event.allDay) throw new ToolError("Kairos can only change timed events, not all-day events.");
     return event;
   }
@@ -102,7 +105,7 @@ export function createTools(session: Session, rules: Rule[]) {
         query: z.string().optional().describe("Optional text to match against titles, descriptions and attendees"),
       }),
       execute: safely(async ({ from, to, query }) => {
-        const events = await gcal.listEvents({
+        const events = await calendar.listEvents({
           timeMin: startOfLocalDay(from, tz),
           timeMax: startOfLocalDay(addDaysToLocalDate(to, 1), tz),
           query,
@@ -113,10 +116,10 @@ export function createTools(session: Session, rules: Rule[]) {
     }),
 
     get_event: tool({
-      description: "Full details of one event: description/agenda, attendees with RSVP status, organizer, location, Meet link.",
+      description: "Full details of one event: description/agenda, attendees with RSVP status, organizer, location, video link.",
       inputSchema: z.object({ eventId: z.string() }),
       execute: safely(async ({ eventId }) => {
-        const e = await gcal.getEvent(eventId);
+        const e = await calendar.getEvent(eventId);
         return {
           ...eventForModel(e, tz, user.email),
           description: e.description ? stripHtml(e.description).slice(0, 2000) : undefined,
@@ -175,7 +178,7 @@ export function createTools(session: Session, rules: Rule[]) {
       execute: safely(async (input) => {
         const timeMin = startOfLocalDay(input.from, tz);
         const timeMax = startOfLocalDay(addDaysToLocalDate(input.to, 1), tz);
-        const fb = await gcal.freeBusy({ timeMin, timeMax, emails: input.attendees ?? [] });
+        const fb = await calendar.freeBusy({ timeMin, timeMax, emails: input.attendees ?? [] });
         const result = findFreeSlots({
           from: input.from,
           to: input.to,
@@ -218,7 +221,7 @@ export function createTools(session: Session, rules: Rule[]) {
         description: z.string().max(4000).optional().describe("Agenda or notes. Draft a short agenda for meetings with others."),
         location: z.string().max(300).optional(),
         attendees: z.array(email).default([]).describe("Other attendees' emails (not the user)"),
-        addMeetLink: z.boolean().optional().describe("Add a Google Meet link. Defaults to true when there are attendees."),
+        addMeetLink: z.boolean().optional().describe("Add a video call link. Defaults to true when there are attendees."),
         options: z
           .array(z.object({ start: localDateTime, end: localDateTime, reason: z.string().max(160).optional() }))
           .min(1)
@@ -242,7 +245,13 @@ export function createTools(session: Session, rules: Rule[]) {
         const attendees = [...new Set(input.attendees.map((a) => a.toLowerCase()))].filter(
           (a) => a !== user.email.toLowerCase(),
         );
-        if (attendees.length) warnings.push(`${attendees.length} attendee${attendees.length > 1 ? "s" : ""} will get an invite.`);
+        if (attendees.length) {
+          warnings.push(
+            emailsAttendees
+              ? `${plural(attendees.length, "attendee")} will get an invite.`
+              : `Kairos calendars don't email invites. Share the time and video link with ${plural(attendees.length, "attendee")}.`,
+          );
+        }
         return createProposal(
           session,
           {
@@ -304,7 +313,7 @@ export function createTools(session: Session, rules: Rule[]) {
         if (event.organizerSelf === false) {
           warnings.push("You're not the organizer, so this only changes your copy. Consider asking the organizer instead.");
         } else if (others.length) {
-          warnings.push(`${others.length} attendee${others.length > 1 ? "s" : ""} will be notified.`);
+          warnings.push(emailsAttendees ? `${plural(others.length, "attendee")} will be notified.` : `Let ${plural(others.length, "attendee")} know about the change.`);
         }
         if (event.recurring) warnings.push("Only this occurrence of the recurring event changes.");
 
@@ -334,7 +343,9 @@ export function createTools(session: Session, rules: Rule[]) {
         const others = event.attendees.filter((a) => !a.self);
         const warnings: string[] = [];
         if (event.organizerSelf === false) warnings.push("You're not the organizer; this removes it from your calendar only.");
-        else if (others.length) warnings.push(`${others.length} attendee${others.length > 1 ? "s" : ""} will get a cancellation.`);
+        else if (others.length) {
+          warnings.push(emailsAttendees ? `${plural(others.length, "attendee")} will get a cancellation.` : `Let ${plural(others.length, "attendee")} know it's cancelled.`);
+        }
         if (event.recurring) warnings.push("Only this occurrence of the recurring event is removed.");
         return createProposal(
           session,

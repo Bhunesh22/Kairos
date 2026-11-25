@@ -58,7 +58,7 @@ export function EventDetails({
               {event.meetLink && (
                 <Button asChild className="w-fit">
                   <a href={event.meetLink} target="_blank" rel="noreferrer">
-                    <Video /> Join Google Meet
+                    <Video /> {event.meetLink.includes("meet.google.com") ? "Join Google Meet" : "Join video call"}
                   </a>
                 </Button>
               )}

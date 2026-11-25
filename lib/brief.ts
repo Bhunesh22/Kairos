@@ -155,10 +155,10 @@ const aiBriefSchema = z.object({
 });
 
 export async function getDailyBrief(session: Session, { refresh = false } = {}): Promise<BriefContent> {
-  const { gcal, user, userId } = session;
+  const { calendar, user, userId } = session;
   const tz = user.timezone;
   const date = toLocalDate(new Date(), tz);
-  const events = await gcal.listEvents({
+  const events = await calendar.listEvents({
     timeMin: startOfLocalDay(date, tz),
     timeMax: startOfLocalDay(addDaysToLocalDate(date, 1), tz),
     max: 100,

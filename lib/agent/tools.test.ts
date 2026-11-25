@@ -2,7 +2,7 @@ import type { LanguageModelV4StreamPart } from "@ai-sdk/provider";
 import type { ToolExecutionOptions } from "ai";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import type { User } from "@/lib/db/schema";
-import type { GoogleCalendar } from "@/lib/google/calendar";
+import type { CalendarProvider } from "@/lib/calendar/provider";
 import type { CalEvent } from "@/lib/google/types";
 import { normalizeRule } from "@/lib/scheduling/rules";
 import type { Session } from "@/lib/session";
@@ -30,6 +30,11 @@ const at = (local: string) => parseLocal(local, TZ);
 
 const user: User = {
   id: "user_1",
+  googleSub: "google-sub-1",
+  passwordHash: null,
+  calendarProvider: "google",
+  picture: null,
+  lastLoginAt: null,
   email: "me@acme.com",
   name: "Sam",
   timezone: TZ,
@@ -54,6 +59,7 @@ const standup: CalEvent = {
 
 function fakeCalendar() {
   return {
+    kind: "google" as const,
     listEvents: vi.fn(async ({ timeMin, timeMax }: { timeMin: Date; timeMax: Date }) =>
       [standup].filter((e) => new Date(e.start) < timeMax && new Date(e.end) > timeMin),
     ),
@@ -88,7 +94,7 @@ async function run<T extends Executable>(t: T, input: ToolInput<T>): Promise<Too
 
 beforeEach(() => {
   gcal = fakeCalendar();
-  const session = { userId: user.id, user, gcal: gcal as unknown as GoogleCalendar } satisfies Session;
+  const session = { userId: user.id, user, calendar: gcal as unknown as CalendarProvider } satisfies Session;
   tools = createTools(session, [normalizeRule({ type: "no_meetings_before", time: "10:00", days: ["tue"] })]);
 });
 

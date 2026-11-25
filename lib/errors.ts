@@ -39,7 +39,7 @@ export function toAppError(err: unknown): AppError {
         return new AppError("internal", `Google Calendar error: ${err.message}`, 502);
     }
   }
-  if (err instanceof Error && /DATABASE_URL|GOOGLE_GENERATIVE_AI_API_KEY/.test(err.message)) {
+  if (err instanceof Error && /DATABASE_URL|GOOGLE_GENERATIVE_AI_API_KEY|AUTH_SECRET|GOOGLE_CLIENT_ID/.test(err.message)) {
     return new AppError("config", err.message, 500);
   }
   console.error(err);

@@ -21,6 +21,12 @@ export async function fetchJson<T>(url: string, init?: RequestInit): Promise<T> 
   const body = await res.json().catch(() => null);
   if (!res.ok) {
     const err = body as ApiErrorBody | null;
+    if (res.status === 401 && typeof window !== "undefined") {
+      // Session JWT expired while the page was open: go back through sign-in and return here.
+      // Outside React (no router), and a full reload clears stale cached data anyway.
+      // eslint-disable-next-line @next/next/no-location-assign-relative-destination
+      window.location.assign(`/sign-in?returnTo=${encodeURIComponent(window.location.pathname)}`);
+    }
     throw new ApiError(err?.error ?? `Request failed (${res.status})`, err?.code ?? "internal", res.status);
   }
   return body as T;

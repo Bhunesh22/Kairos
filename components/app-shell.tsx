@@ -1,12 +1,12 @@
 "use client";
 
-import { UserButton } from "@clerk/nextjs";
 import { Command as CommandIcon, Moon, Sun } from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useTheme } from "next-themes";
 import { AgentProvider, useAgent } from "@/components/agent/agent-provider";
 import { CommandBar } from "@/components/agent/command-bar";
+import { UserMenu } from "@/components/auth/user-menu";
 import { Logo } from "@/components/logo";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
@@ -56,7 +56,7 @@ function Header() {
           <Sun className="hidden dark:block" />
           <Moon className="dark:hidden" />
         </Button>
-        <UserButton />
+        <UserMenu />
       </div>
     </header>
   );

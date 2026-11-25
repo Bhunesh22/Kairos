@@ -6,6 +6,10 @@ import type { Goals, Rule, WorkingHours } from "@/lib/scheduling/rules";
 export type MeResponse = {
   name: string | null;
   email: string;
+  picture: string | null;
+  /** "google" = synced Google Calendar; "local" = Kairos calendar stored in Neon. */
+  calendarProvider: "google" | "local";
+  googleLinked: boolean;
   timezone: string;
   workingHours: WorkingHours;
   goals: Goals;

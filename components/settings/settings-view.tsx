@@ -1,8 +1,10 @@
 "use client";
 
-import { Loader2, Plus, Trash2 } from "lucide-react";
+import { CalendarDays, Loader2, Plus, Trash2 } from "lucide-react";
 import { useMemo, useState } from "react";
 import { toast } from "sonner";
+import useSWR from "swr";
+import { GoogleSignInButton } from "@/components/auth/sign-in-panel";
 import { ConnectGoogle } from "@/components/connect-google";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -118,6 +120,56 @@ function ScheduleCard({ me, onSaved }: { me: MeResponse; onSaved: (me: MeRespons
   );
 }
 
+function CalendarCard({ me }: { me: MeResponse }) {
+  const local = me.calendarProvider === "local";
+  const { data: sample, mutate } = useSWR<{ count: number }>(local ? "/api/calendar/sample" : null);
+  const [removing, setRemoving] = useState(false);
+
+  async function removeSample() {
+    setRemoving(true);
+    try {
+      const { deleted } = await fetchJson<{ deleted: number }>("/api/calendar/sample", { method: "DELETE" });
+      await mutate({ count: 0 }, { revalidate: false });
+      toast.success(`Removed ${deleted} sample events.`);
+    } catch (err) {
+      toast.error((err as Error).message);
+    } finally {
+      setRemoving(false);
+    }
+  }
+
+  return (
+    <Card>
+      <CardHeader>
+        <CardTitle className="flex items-center gap-2">
+          <CalendarDays className="size-4 text-brand" /> {local ? "Kairos calendar" : "Google Calendar"}
+        </CardTitle>
+        <CardDescription>
+          {local
+            ? "Your events live in Kairos. The agent can schedule, move, cancel and brief you as usual. Invitations aren't emailed, video links are Jitsi rooms, and other people's availability isn't visible."
+            : `Synced with the Google Calendar of ${me.email}. Kairos reads it and only changes events after you approve.`}
+        </CardDescription>
+      </CardHeader>
+      {local && (
+        <CardContent className="flex flex-col gap-3">
+          <div className="flex flex-col gap-1.5">
+            <GoogleSignInButton href="/api/auth/google?prompt=consent&returnTo=/settings" label="Connect Google Calendar" className="sm:w-fit" />
+            <p className="text-xs text-muted-foreground">
+              Google Calendar sync is invite-only during the beta: your Google account must be on the tester list. Events already in your
+              Kairos calendar stay here.
+            </p>
+          </div>
+          {!!sample?.count && (
+            <Button variant="outline" className="w-fit" onClick={removeSample} disabled={removing}>
+              {removing ? <Loader2 className="animate-spin" /> : <Trash2 />} Remove {sample.count} sample events
+            </Button>
+          )}
+        </CardContent>
+      )}
+    </Card>
+  );
+}
+
 function RulesCard() {
   const { data: rules, mutate, isLoading } = usePreferences();
   const [text, setText] = useState("");
@@ -213,7 +265,10 @@ export function SettingsView() {
         {error ? (
           <p className="text-sm text-destructive">{(error as Error).message}</p>
         ) : me ? (
-          <ScheduleCard key={me.timezone + me.workingHours.start} me={me} onSaved={(next) => mutate(next, { revalidate: false })} />
+          <>
+            <CalendarCard me={me} />
+            <ScheduleCard key={me.timezone + me.workingHours.start} me={me} onSaved={(next) => mutate(next, { revalidate: false })} />
+          </>
         ) : (
           <Skeleton className="h-80 w-full" />
         )}

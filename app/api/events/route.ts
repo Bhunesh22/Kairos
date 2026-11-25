@@ -15,7 +15,7 @@ export const GET = route(async (req: NextRequest) => {
 
   const session = await getSession();
   const tz = session.user.timezone;
-  const events = await session.gcal.listEvents({
+  const events = await session.calendar.listEvents({
     timeMin: startOfLocalDay(from, tz),
     timeMax: startOfLocalDay(addDaysToLocalDate(to, 1), tz),
     max: 1000,

@@ -29,7 +29,7 @@ function eventRange(e: CalEvent) {
  */
 export async function syncIfStale(session: Session, { force = false } = {}): Promise<boolean> {
   const db = getDb();
-  const { userId, user, gcal } = session;
+  const { userId, user, calendar } = session;
   const [state] = await db
     .select()
     .from(syncState)
@@ -39,7 +39,7 @@ export async function syncIfStale(session: Session, { force = false } = {}): Pro
   const now = new Date();
   const timeMin = new Date(now.getTime() - 90 * DAY_MS);
   const timeMax = new Date(now.getTime() + 30 * DAY_MS);
-  const events = await gcal.listEvents({ timeMin, timeMax, max: 2000 });
+  const events = await calendar.listEvents({ timeMin, timeMax, max: 2000 });
 
   const eventRows = events.map((e) => ({
     userId,

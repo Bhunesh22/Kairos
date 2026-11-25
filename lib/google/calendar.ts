@@ -1,7 +1,8 @@
 import "server-only";
 import { auth as googleAuth, calendar as googleCalendar, type calendar_v3 } from "@googleapis/calendar";
 import type { Interval } from "@/lib/time";
-import type { Attendee, CalEvent } from "./types";
+import type { CalendarProvider, EventPatch, NewEventInput } from "@/lib/calendar/provider";
+import type { CalEvent } from "./types";
 
 export type GoogleErrorKind = "auth" | "not_found" | "rate_limit" | "other";
 
@@ -63,30 +64,10 @@ function toCalEvent(e: calendar_v3.Schema$Event): CalEvent {
   };
 }
 
-export type NewEventInput = {
-  title: string;
-  description?: string;
-  location?: string;
-  start: Date;
-  end: Date;
-  attendees: string[];
-  addMeetLink: boolean;
-  timeZone: string;
-};
-
-export type EventPatch = {
-  title?: string;
-  description?: string;
-  location?: string;
-  start?: Date;
-  end?: Date;
-  /** Full replacement attendee list. Pass existing attendees through unchanged to keep their RSVPs. */
-  attendees?: Pick<Attendee, "email" | "name" | "responseStatus" | "optional">[];
-  timeZone: string;
-};
-
 /** Typed wrapper over Google Calendar v3 for the user's primary calendar. */
-export class GoogleCalendar {
+export class GoogleCalendar implements CalendarProvider {
+  readonly kind = "google" as const;
+
   constructor(
     private readonly api: calendar_v3.Calendar,
     private readonly calendarId = "primary",

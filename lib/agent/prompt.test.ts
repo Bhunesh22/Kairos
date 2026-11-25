@@ -5,6 +5,11 @@ import { buildInstructions } from "./prompt";
 
 const user: User = {
   id: "user_1",
+  googleSub: "google-sub-1",
+  passwordHash: null,
+  calendarProvider: "google",
+  picture: null,
+  lastLoginAt: null,
   email: "me@acme.com",
   name: "Asha",
   timezone: "Asia/Kolkata",

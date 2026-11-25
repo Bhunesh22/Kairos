@@ -56,7 +56,7 @@ const othersOf = (e: CalEvent) => e.attendees.filter((a) => !a.self);
 
 export async function approveAction(session: Session, id: string, opts: { optionIndex?: number } = {}): Promise<ActionState> {
   const row = await claim(session.userId, id, "proposed", "executing");
-  const { gcal, user } = session;
+  const { calendar, user } = session;
   const p = row.proposal;
   try {
     let before: EventSnapshot | null = null;
@@ -67,7 +67,7 @@ export async function approveAction(session: Session, id: string, opts: { option
       const index = opts.optionIndex ?? 0;
       const option = p.options[index];
       if (!option) throw new AppError("bad_request", "Pick one of the proposed times.");
-      after = await gcal.createEvent({
+      after = await calendar.createEvent({
         title: p.title,
         description: p.description,
         location: p.location,
@@ -79,7 +79,7 @@ export async function approveAction(session: Session, id: string, opts: { option
       });
       proposal = { ...p, chosenOption: index };
     } else if (p.kind === "update_event") {
-      before = await gcal.getEvent(p.eventId);
+      before = await calendar.getEvent(p.eventId);
       const { changes } = p;
       let attendees: CalEvent["attendees"] | undefined;
       if (changes.addAttendees?.length || changes.removeAttendees?.length) {
@@ -90,7 +90,7 @@ export async function approveAction(session: Session, id: string, opts: { option
         attendees = [...kept, ...added];
       }
       const notify = othersOf(before).length > 0 || !!changes.addAttendees?.length;
-      after = await gcal.patchEvent(
+      after = await calendar.patchEvent(
         p.eventId,
         {
           title: changes.title,
@@ -104,8 +104,8 @@ export async function approveAction(session: Session, id: string, opts: { option
         notify,
       );
     } else {
-      before = await gcal.getEvent(p.eventId);
-      await gcal.deleteEvent(p.eventId, othersOf(before).length > 0 && !!before.organizerSelf);
+      before = await calendar.getEvent(p.eventId);
+      await calendar.deleteEvent(p.eventId, othersOf(before).length > 0 && !!before.organizerSelf);
     }
 
     return toState(await finish(id, { status: "executed", before, after, proposal, error: null }), user.timezone);
@@ -123,15 +123,15 @@ export async function rejectAction(session: Session, id: string): Promise<Action
 
 export async function undoAction(session: Session, id: string): Promise<ActionState> {
   const row = await claim(session.userId, id, "executed", "undoing");
-  const { gcal, user } = session;
+  const { calendar, user } = session;
   const { before, after } = row;
   try {
     if (row.kind === "create_event" && after) {
-      await gcal.deleteEvent(after.id, othersOf(after).length > 0);
+      await calendar.deleteEvent(after.id, othersOf(after).length > 0);
     } else if (row.kind === "update_event" && before) {
       const attendeesChanged =
         after && after.attendees.map((a) => a.email).join() !== before.attendees.map((a) => a.email).join();
-      await gcal.patchEvent(
+      await calendar.patchEvent(
         before.id,
         {
           title: before.title,
@@ -146,7 +146,7 @@ export async function undoAction(session: Session, id: string): Promise<ActionSt
       );
     } else if (row.kind === "delete_event" && before) {
       // Google can't restore a deleted event; recreate it (attendees get a fresh invite).
-      const recreated = await gcal.createEvent({
+      const recreated = await calendar.createEvent({
         title: before.title,
         description: before.description,
         location: before.location,

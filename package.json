@@ -16,7 +16,6 @@
   "dependencies": {
     "@ai-sdk/google": "^4.0.126",
     "@ai-sdk/react": "^4.0.186",
-    "@clerk/nextjs": "^7.10.9",
     "@date-fns/tz": "^1.5.0",
     "@googleapis/calendar": "^20.2.0",
     "@neondatabase/serverless": "^1.2.1",
@@ -26,6 +25,7 @@
     "cn": "^0.5.2",
     "date-fns": "^4.4.0",
     "drizzle-orm": "^0.45.4",
+    "jose": "^6.2.18",
     "lucide-react": "^1.80.0",
     "next": "16.4.6",
     "next-themes": "^0.4.6",
@@ -41,6 +41,7 @@
     "zod": "^4.6.7"
   },
   "devDependencies": {
+    "@electric-sql/pglite": "^0.6.0",
     "@tailwindcss/turbopack": "4.3.3",
     "@types/node": "^24.19.4",
     "@types/react": "^19",

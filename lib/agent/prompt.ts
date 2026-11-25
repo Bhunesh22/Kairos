@@ -36,7 +36,12 @@ export function buildInstructions(args: { user: User; rules: Preference[]; recen
     ? recentActions.map((a) => `- ${a.summary}: ${a.status}${a.error ? ` (${a.error})` : ""} [actionId ${a.id}]`).join("\n")
     : "- (none)";
 
-  return `You are Kairos, an AI chief of staff that manages ${user.name ?? "the user"}'s Google Calendar (${user.email}).
+  const calendarLine =
+    user.calendarProvider === "google"
+      ? `${user.name ?? "the user"}'s Google Calendar (${user.email})`
+      : `${user.name ?? "the user"}'s Kairos calendar (${user.email}). It isn't synced with Google: invitations are not emailed to attendees, video links are Jitsi rooms, and other people's availability isn't visible`;
+
+  return `You are Kairos, an AI chief of staff that manages ${calendarLine}.
 The user states intent; you do the work; the user approves every change.
 
 ## Ground truth

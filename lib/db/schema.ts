@@ -5,17 +5,70 @@ import { DEFAULT_GOALS, DEFAULT_WORKING_HOURS, type Goals, type Rule, type Worki
 
 const createdAt = () => timestamp("created_at", { withTimezone: true }).notNull().defaultNow();
 
-/** One row per Clerk user. Google tokens are never stored here; Clerk holds and refreshes them. */
+export const CALENDAR_PROVIDERS = ["google", "local"] as const;
+
+/**
+ * One row per person. Created by Google sign-in or email sign-up; a person
+ * can have both (linked by verified email or by connecting Google later).
+ */
 export const users = pgTable("users", {
-  id: text("id").primaryKey(),
-  email: text("email").notNull(),
+  id: text("id")
+    .primaryKey()
+    .$defaultFn(() => crypto.randomUUID()),
+  /** Always stored lower-case. */
+  email: text("email").notNull().unique(),
+  /** Google's stable account id (the ID token's `sub`), once Google is linked. */
+  googleSub: text("google_sub").unique(),
+  /** scrypt hash for email sign-in; null for Google-only accounts. */
+  passwordHash: text("password_hash"),
+  /** Which calendar Kairos manages: the user's Google Calendar, or a Kairos calendar stored in Neon. */
+  calendarProvider: text("calendar_provider", { enum: CALENDAR_PROVIDERS }).notNull().default("local"),
   name: text("name"),
+  picture: text("picture"),
   timezone: text("timezone").notNull().default("UTC"),
   workingHours: jsonb("working_hours").$type<WorkingHours>().notNull().default(DEFAULT_WORKING_HOURS),
   goals: jsonb("goals").$type<Goals>().notNull().default(DEFAULT_GOALS),
   createdAt: createdAt(),
   updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
+  lastLoginAt: timestamp("last_login_at", { withTimezone: true }),
 });
+
+/** Google OAuth tokens, encrypted at rest (AES-256-GCM). Kept apart from `users` so they never travel with profile data. */
+export const googleAccounts = pgTable("google_accounts", {
+  userId: text("user_id")
+    .primaryKey()
+    .references(() => users.id, { onDelete: "cascade" }),
+  refreshToken: text("refresh_token_enc"),
+  accessToken: text("access_token_enc"),
+  accessTokenExpiresAt: timestamp("access_token_expires_at", { withTimezone: true }),
+  /** Space-separated scopes the user granted. */
+  scopes: text("scopes").notNull().default(""),
+  updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
+});
+
+/** Events on Kairos calendars (users who don't sync Google). Same shape the agent sees for Google events. */
+export const localEvents = pgTable(
+  "local_events",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    userId: text("user_id")
+      .notNull()
+      .references(() => users.id, { onDelete: "cascade" }),
+    title: text("title").notNull(),
+    description: text("description"),
+    location: text("location"),
+    startAt: timestamp("start_at", { withTimezone: true }).notNull(),
+    endAt: timestamp("end_at", { withTimezone: true }).notNull(),
+    /** Other attendees (the owner is implied). */
+    attendees: jsonb("attendees").$type<{ email: string; name?: string; optional?: boolean }[]>().notNull().default([]),
+    meetLink: text("meet_link"),
+    /** Seeded demo data, removable from Settings. */
+    isSample: boolean("is_sample").notNull().default(false),
+    createdAt: createdAt(),
+    updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => [index("local_events_user_start_idx").on(t.userId, t.startAt)],
+);
 
 /** Scheduling rules the user taught Kairos ("no meetings before 10 on Fridays"). */
 export const preferences = pgTable(
@@ -133,5 +186,7 @@ export const syncState = pgTable(
 );
 
 export type User = typeof users.$inferSelect;
+export type GoogleAccount = typeof googleAccounts.$inferSelect;
+export type LocalEvent = typeof localEvents.$inferSelect;
 export type Preference = typeof preferences.$inferSelect;
 export type AgentAction = typeof agentActions.$inferSelect;

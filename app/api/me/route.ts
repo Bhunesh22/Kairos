@@ -8,9 +8,12 @@ import { workingHoursSchema } from "@/lib/scheduling/rules";
 import { getSession } from "@/lib/session";
 import { isValidTimeZone } from "@/lib/time";
 
-const toMe = ({ name, email, timezone, workingHours, goals }: User): MeResponse => ({
+const toMe = ({ name, email, picture, calendarProvider, googleSub, timezone, workingHours, goals }: User): MeResponse => ({
   name,
   email,
+  picture,
+  calendarProvider,
+  googleLinked: !!googleSub,
   timezone,
   workingHours,
   goals,

@@ -1,17 +1,28 @@
-import { clerkMiddleware, createRouteMatcher } from "@clerk/nextjs/server";
+import { NextResponse, type NextRequest } from "next/server";
+import { SESSION_COOKIE, verifySessionToken } from "@/lib/auth/jwt";
 
-const isPublicRoute = createRouteMatcher(["/", "/sign-in(.*)", "/sign-up(.*)"]);
-// API handlers check auth themselves (getSession) and answer with JSON 401s instead of redirects.
-const isApiRoute = createRouteMatcher(["/api(.*)"]);
+const PUBLIC_PAGES = new Set(["/", "/sign-in"]);
 
-export default clerkMiddleware(async (auth, req) => {
-  if (!isPublicRoute(req) && !isApiRoute(req)) await auth.protect();
-});
+/**
+ * Page-level gate. API routes aren't matched: each handler verifies the JWT
+ * itself (getSession) and answers with a JSON 401 instead of a redirect.
+ */
+export async function proxy(req: NextRequest) {
+  const { pathname, search } = req.nextUrl;
+  const session = await verifySessionToken(req.cookies.get(SESSION_COOKIE)?.value);
+
+  if (pathname === "/sign-in" && session) {
+    return NextResponse.redirect(new URL("/calendar", req.url));
+  }
+  if (!PUBLIC_PAGES.has(pathname) && !session) {
+    const url = new URL("/sign-in", req.url);
+    url.searchParams.set("returnTo", pathname + search);
+    return NextResponse.redirect(url);
+  }
+  return NextResponse.next();
+}
 
 export const config = {
-  matcher: [
-    // Skip Next.js internals and static files, unless found in search params.
-    "/((?!_next|[^?]*\\.(?:html?|css|js(?!on)|jpe?g|webp|png|gif|svg|ttf|woff2?|ico|csv|docx?|xlsx?|zip|webmanifest)).*)",
-    "/(api|trpc)(.*)",
-  ],
+  // Everything except API routes, Next.js internals and files with an extension.
+  matcher: ["/((?!api|_next|.*\\..*).*)"],
 };

@@ -1,6 +1,7 @@
 "use client";
 
 import { ChevronLeft, ChevronRight, Loader2, MessageSquareText } from "lucide-react";
+import Link from "next/link";
 import { useMemo, useState } from "react";
 import { useAgent } from "@/components/agent/agent-provider";
 import { AgentPanel } from "@/components/agent/agent-panel";
@@ -79,7 +80,15 @@ export function CalendarWorkspace() {
           {events.isValidating && <Loader2 className="size-4 animate-spin text-muted-foreground" aria-label="Refreshing" />}
           <div className="ml-auto flex items-center gap-3">
             <Legend />
-            {tz && <span className="hidden text-xs text-muted-foreground sm:inline">{tz}</span>}
+            {me.data && (
+              <Link
+                href="/settings"
+                className="hidden rounded-full border px-2 py-0.5 text-xs text-muted-foreground hover:bg-muted sm:inline"
+                title={me.data.calendarProvider === "local" ? "Events live in Kairos. Connect Google Calendar in Settings." : "Synced with Google Calendar"}
+              >
+                {me.data.calendarProvider === "local" ? "Kairos calendar" : "Google Calendar"} · {tz}
+              </Link>
+            )}
           </div>
         </div>
 

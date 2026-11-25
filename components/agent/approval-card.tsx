@@ -6,6 +6,7 @@ import { toast } from "sonner";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import type { ActionState, ProposalToolOutput } from "@/lib/agent/action-types";
+import { useMe } from "@/hooks/use-calendar-data";
 import { fetchJson } from "@/lib/fetcher";
 import { cn } from "@/lib/utils";
 import { useAgent } from "./agent-provider";
@@ -62,6 +63,8 @@ function useAction(actionId: string, initial: ActionState["status"] = "proposed"
 export function ApprovalCard({ data }: { data: ProposalToolOutput }) {
   const p = data.proposal;
   const { state, status, pending, run } = useAction(data.actionId);
+  const { data: me } = useMe();
+  const sendsInvites = me?.calendarProvider !== "local";
   const [choice, setChoice] = useState(0);
   const isOpen = status === "proposed";
   const badge = STATUS_BADGE[status];
@@ -69,7 +72,7 @@ export function ApprovalCard({ data }: { data: ProposalToolOutput }) {
   const Icon = p.kind === "create_event" ? CalendarPlus : p.kind === "update_event" ? CalendarClock : CalendarX2;
   const approveLabel =
     p.kind === "create_event"
-      ? p.attendees.length
+      ? p.attendees.length && sendsInvites
         ? "Book & send invites"
         : "Add to calendar"
       : p.kind === "update_event"
@@ -106,7 +109,7 @@ export function ApprovalCard({ data }: { data: ProposalToolOutput }) {
                 ))}
                 {p.addMeetLink && (
                   <span className="inline-flex items-center gap-1 rounded-full bg-muted px-2 py-0.5">
-                    <Video className="size-3" /> Meet
+                    <Video className="size-3" /> Video call
                   </span>
                 )}
               </div>

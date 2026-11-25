@@ -32,7 +32,7 @@ export default function Home() {
       <header className="mx-auto flex w-full max-w-5xl items-center justify-between px-4 py-5 sm:px-6">
         <Logo className="text-lg" />
         <Button asChild variant="ghost" size="sm">
-          <Link href="/calendar">Sign in</Link>
+          <Link href="/sign-in">Sign in</Link>
         </Button>
       </header>
 
@@ -70,7 +70,7 @@ export default function Home() {
       </main>
 
       <footer className="border-t py-6 text-center text-xs text-muted-foreground">
-        Built on Google Calendar and Gemini. Kairos never changes your calendar without your approval.
+        Works with Google Calendar or a built-in Kairos calendar. Powered by Gemini. Nothing changes without your approval.
       </footer>
     </div>
   );
