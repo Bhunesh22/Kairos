@@ -2,6 +2,10 @@
 
 Kairos is an AI-native layer on top of Google Calendar. You say what you want, and it schedules, protects, prepares and reviews your time for you.
 
+**Live app:** https://kairos-sigma-neon.vercel.app
+
+Anyone can sign up with email and get a Kairos calendar, pre-filled with a sample week if they want one. *Continue with Google* syncs your real Google Calendar, but only for invited testers while the Google OAuth app is in Testing mode.
+
 > The Greeks had two words for time. *Chronos* is clock time, which is what calendars track. *Kairos* is the right moment, which is what this app manages.
 
 The core idea: **calendar-as-ledger → calendar-as-agent.** The user states intent, the agent does the work, the user approves. The full product thinking (personas, the 10X levers, feature map, roadmap) is in [docs/PLAN.md](docs/PLAN.md).
